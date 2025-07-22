@@ -157,7 +157,7 @@ export class DynamicMockRouterService implements OnModuleInit {
         };
         // Type the Express app with index signature for HTTP methods
         (
-          expressApp as {
+          expressApp as unknown as {
             [key: string]: (
               path: string,
               handler: (req: Request, res: Response) => Promise<void>,

@@ -57,7 +57,10 @@ export class MocksService {
   ): Promise<OpenAPIObject> {
     try {
       // Optionally cache the spec after validation
-      return (await SwaggerParser.validate(spec)) as OpenAPIObject;
+      // SwaggerParser.validate accepts string | Document<{}>
+      return (await SwaggerParser.validate(
+        spec as any,
+      )) as unknown as OpenAPIObject;
     } catch (e) {
       if (e instanceof Error) {
         throw new BadRequestException('Invalid OpenAPI spec: ' + e.message);
