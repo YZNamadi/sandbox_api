@@ -6,7 +6,7 @@ import { Sandbox } from '../sandboxes/sandbox.entity';
 import SwaggerParser from '@apidevtools/swagger-parser';
 import { Inject } from '@nestjs/common';
 import { Redis } from 'ioredis';
-type OpenAPIObject = any;
+type OpenAPIObject = Record<string, unknown>;
 
 @Injectable()
 export class MocksService {
@@ -27,11 +27,11 @@ export class MocksService {
   }
 
   // Cache mock response in Redis
-  async cacheMockResponse(sandboxId: string, path: string, method: string, response: any): Promise<void> {
+  async cacheMockResponse(sandboxId: string, path: string, method: string, response: unknown): Promise<void> {
     await this.redis.set(`sandbox:${sandboxId}:mock:${method}:${path}`, JSON.stringify(response));
   }
 
-  async getCachedMockResponse(sandboxId: string, path: string, method: string): Promise<any | null> {
+  async getCachedMockResponse(sandboxId: string, path: string, method: string): Promise<unknown | null> {
     const respStr = await this.redis.get(`sandbox:${sandboxId}:mock:${method}:${path}`);
     return respStr ? JSON.parse(respStr) : null;
   }
@@ -39,13 +39,16 @@ export class MocksService {
   async validateOpenApiSpec(spec: object): Promise<OpenAPIObject> {
     try {
       // Optionally cache the spec after validation
-      return (await SwaggerParser.validate(spec as any)) as OpenAPIObject;
+      return (await (SwaggerParser.validate(spec as any))) as OpenAPIObject;
     } catch (e) {
-      throw new BadRequestException('Invalid OpenAPI spec: ' + e.message);
+      if (e instanceof Error) {
+        throw new BadRequestException('Invalid OpenAPI spec: ' + e.message);
+      }
+      throw new BadRequestException('Invalid OpenAPI spec');
     }
   }
 
-  async saveCustomMock(sandboxId: string, path: string, method: string, response: any, isRandomized = false, delayMs?: number) {
+  async saveCustomMock(sandboxId: string, path: string, method: string, response: unknown, isRandomized = false, delayMs?: number): Promise<unknown> {
     const sandbox = await this.sandboxRepo.findOne({ where: { id: sandboxId } });
     if (!sandbox) throw new BadRequestException('Sandbox not found');
     const mock = this.mockRepo.create({ sandbox, path, method, response, isRandomized, delayMs });
@@ -55,7 +58,7 @@ export class MocksService {
     return saved;
   }
 
-  async getMockResponse(sandboxId: string, path: string, method: string) {
+  async getMockResponse(sandboxId: string, path: string, method: string): Promise<unknown | null> {
     // Try Redis cache first
     const cached = await this.getCachedMockResponse(sandboxId, path, method);
     if (cached) return cached;

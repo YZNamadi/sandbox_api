@@ -1,18 +1,17 @@
 import { Injectable, Logger, OnModuleInit, Inject } from '@nestjs/common';
-import { INestApplication, RequestMethod } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { Sandbox } from '../sandboxes/sandbox.entity';
 import { MocksService } from './mocks.service';
 import { Express, Request, Response } from 'express';
-import { Mock } from './mock.entity';
 import { SimulationsService } from '../simulations/simulations.service';
 import { Redis } from 'ioredis';
 
 @Injectable()
 export class DynamicMockRouterService implements OnModuleInit {
   private readonly logger = new Logger(DynamicMockRouterService.name);
-  private registeredRoutes: Map<string, Array<{ method: string; path: string; handler: any }>> = new Map();
-  private simulationState: Record<string, any> = {};
+  private registeredRoutes: Map<string, Array<{ method: string; path: string; handler: (req: Request, res: Response) => Promise<void> }>> = new Map();
+  private simulationState: Record<string, unknown> = {};
 
   constructor(
     private readonly mocksService: MocksService,
@@ -21,26 +20,26 @@ export class DynamicMockRouterService implements OnModuleInit {
     @Inject('REDIS_CLIENT') private readonly redis: Redis,
   ) {}
 
-  onModuleInit() {
+  onModuleInit(): void {
     // Placeholder: will be called on app bootstrap
   }
 
-  public setApp(app: INestApplication) {
+  public setApp(app: INestApplication): void {
     // Optionally store the app instance if needed for future use
     // this.app = app;
   }
 
-  async registerMockRoutes(sandbox: Sandbox, openapi: any) {
+  async registerMockRoutes(sandbox: Sandbox, openapi: Record<string, any>): Promise<void> {
     const expressApp = this.httpAdapterHost.httpAdapter.getInstance();
     // Unregister existing routes for this sandbox first
     this.unregisterMockRoutes(sandbox.id, expressApp);
-    const routes: Array<{ method: string; path: string; handler: any }> = [];
+    const routes: Array<{ method: string; path: string; handler: (req: Request, res: Response) => Promise<void> }> = [];
     for (const path in openapi.paths) {
       const pathItem = openapi.paths[path];
       for (const method of Object.keys(pathItem)) {
         const lowerMethod = method.toLowerCase();
         const routePath = `/sandbox/${sandbox.id}/api${path}`;
-        const handler = async (req: Request, res: Response) => {
+        const handler = async (req: Request, res: Response): Promise<void> => {
           // 1. Check for simulation
           const endpointKey = `${method.toUpperCase()} ${path}`;
           // Use Redis-backed simulation state
@@ -55,18 +54,20 @@ export class DynamicMockRouterService implements OnModuleInit {
                 timestamp: Date.now(),
               })
             );
-            return res.json(simResult);
+            res.json(simResult);
+            return;
           }
           // 2. Check for custom mock
           const customMock = await this.mocksService.getMockResponse(sandbox.id, path, method.toUpperCase());
           if (customMock != null) {
-            if (customMock.delayMs) await new Promise(r => setTimeout(r, customMock.delayMs));
+            if ((customMock as { delayMs?: number }).delayMs) await new Promise(r => setTimeout(r, (customMock as { delayMs: number }).delayMs));
             let responseToSend;
-            if (customMock.isRandomized && Array.isArray(customMock.response)) {
-              const idx = Math.floor(Math.random() * customMock.response.length);
-              responseToSend = customMock.response[idx];
+            if ((customMock as { isRandomized?: boolean; response?: unknown[] }).isRandomized && Array.isArray((customMock as { response?: unknown[] }).response)) {
+              const arr = (customMock as { response: unknown[] }).response;
+              const idx = Math.floor(Math.random() * arr.length);
+              responseToSend = arr[idx];
             } else {
-              responseToSend = customMock.response;
+              responseToSend = (customMock as { response: unknown }).response;
             }
             await this.redis.lpush(
               `sandbox:${sandbox.id}:requests`,
@@ -77,11 +78,12 @@ export class DynamicMockRouterService implements OnModuleInit {
                 timestamp: Date.now(),
               })
             );
-            return res.json(responseToSend);
+            res.json(responseToSend);
+            return;
           }
           // 3. Generate mock response from OpenAPI schema
           const operation = pathItem[method];
-          let mockResponse = { message: 'No mock defined' };
+          let mockResponse: unknown = { message: 'No mock defined' };
           if (operation && operation.responses) {
             const resp = operation.responses['200'] || operation.responses['default'];
             if (resp && resp.content && resp.content['application/json'] && resp.content['application/json'].schema) {
@@ -97,9 +99,9 @@ export class DynamicMockRouterService implements OnModuleInit {
               timestamp: Date.now(),
             })
           );
-          return res.json(mockResponse);
+          res.json(mockResponse);
         };
-        (expressApp as any)[lowerMethod](routePath, handler);
+        (expressApp as Express)[lowerMethod as keyof Express](routePath, handler);
         routes.push({ method: lowerMethod, path: routePath, handler });
         this.logger.log(`Registered mock route: [${method}] ${routePath}`);
       }
@@ -107,13 +109,13 @@ export class DynamicMockRouterService implements OnModuleInit {
     this.registeredRoutes.set(sandbox.id, routes);
   }
 
-  unregisterMockRoutes(sandboxId: string, expressApp: Express) {
-    if (!expressApp._router || !expressApp._router.stack) return;
+  unregisterMockRoutes(sandboxId: string, expressApp: Express): void {
+    if (!(expressApp as any)._router || !(expressApp as any)._router.stack) return;
     const routes = this.registeredRoutes.get(sandboxId);
     if (!routes) return;
     // Remove routes from Express stack
     for (const { method, path } of routes) {
-      const stack = expressApp._router.stack;
+      const stack = (expressApp as any)._router.stack;
       for (let i = stack.length - 1; i >= 0; i--) {
         const layer = stack[i];
         if (layer.route && layer.route.path === path && layer.route.methods[method]) {
@@ -125,21 +127,21 @@ export class DynamicMockRouterService implements OnModuleInit {
     this.registeredRoutes.delete(sandboxId);
   }
 
-  async reloadMockRoutes(sandbox: Sandbox, openapi: any) {
+  async reloadMockRoutes(sandbox: Sandbox, openapi: Record<string, any>): Promise<void> {
     await this.registerMockRoutes(sandbox, openapi);
   }
 
-  generateMockFromSchema(schema: any): any {
+  generateMockFromSchema(schema: Record<string, unknown>): unknown {
     // Simple mock generator for OpenAPI schema (expand as needed)
     if (schema.type === 'object' && schema.properties) {
-      const obj: any = {};
-      for (const key in schema.properties) {
-        obj[key] = this.generateMockFromSchema(schema.properties[key]);
+      const obj: Record<string, unknown> = {};
+      for (const key in schema.properties as Record<string, unknown>) {
+        obj[key] = this.generateMockFromSchema((schema.properties as Record<string, unknown>)[key]);
       }
       return obj;
     }
     if (schema.type === 'array' && schema.items) {
-      return [this.generateMockFromSchema(schema.items)];
+      return [this.generateMockFromSchema(schema.items as Record<string, unknown>)];
     }
     if (schema.example !== undefined) return schema.example;
     if (schema.default !== undefined) return schema.default;

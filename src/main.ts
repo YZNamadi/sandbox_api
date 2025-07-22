@@ -1,12 +1,10 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { JwtAuthGuard } from './modules/auth/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/roles.guard';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { ExecutionContext } from '@nestjs/common';
 import { DynamicMockRouterService } from './modules/mocks/dynamic-mock-router.service';
 
 // Move OptionalJwtAuthGuard to its own file for reuse

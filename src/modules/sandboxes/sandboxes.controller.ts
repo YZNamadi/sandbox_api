@@ -11,8 +11,14 @@ import { Request as ExpressRequest } from 'express';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 
 // Extend Express Request to include user property
+interface JwtUser {
+  userId: string;
+  email: string;
+  teamId: string;
+  role: string;
+}
 interface AuthenticatedRequest extends ExpressRequest {
-  user?: any; // Replace 'any' with your JWT payload type if available
+  user?: JwtUser;
 }
 
 @ApiTags('Sandboxes')
@@ -28,7 +34,7 @@ export class SandboxesController {
   @ApiBody({ type: CreateSandboxDto })
   @ApiResponse({ status: 201, description: 'Sandbox created.' })
   @ApiResponse({ status: 400, description: 'Invalid input.' })
-  async create(@Req() req: AuthenticatedRequest, @Body() dto: CreateSandboxDto) {
+  async create(@Req() req: AuthenticatedRequest, @Body() dto: CreateSandboxDto): Promise<unknown> {
     const teamId = req.user?.teamId;
     if (!teamId) throw new Error('Missing teamId in JWT payload');
     return this.sandboxesService.create(teamId, dto);

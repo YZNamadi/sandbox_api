@@ -69,13 +69,15 @@ async function main() {
     } else {
       printHelp();
     }
-  } catch (err: any) {
-    if (err.response) {
-      console.error('Error:', err.response.data);
+  } catch (err: unknown) {
+    if ((axios as any).isAxiosError && (axios as any).isAxiosError(err) && (err as any).response) {
+      console.error('Error:', (err as any).response.data);
+    } else if (err && typeof err === 'object' && 'message' in err) {
+      console.error('Error:', (err as { message: string }).message);
     } else {
-      console.error('Error:', err.message);
+      console.error('Unknown error:', err);
     }
   }
 }
 
-main(); 
+void main(); 

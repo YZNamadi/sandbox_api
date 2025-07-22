@@ -11,6 +11,7 @@ import { throwError } from 'rxjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Log } from './log.entity';
+import { Request, Response } from 'express';
 
 @Injectable()
 export class LogInterceptor implements NestInterceptor {
@@ -18,25 +19,24 @@ export class LogInterceptor implements NestInterceptor {
     @InjectRepository(Log) private readonly logRepo: Repository<Log>,
   ) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const req = context.switchToHttp().getRequest();
-    const user = req.user;
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const req = context.switchToHttp().getRequest<Request>();
+    const user = req.user as { userId?: string } | undefined;
     const params = req.params || {};
     const body = req.body || {};
     const query = req.query || {};
-    const sandboxId = params.sandboxId || body.sandboxId || query.sandboxId;
-    const route = req.route?.path || req.url;
-    const method = req.method;
-    const requestBody = req.body;
+    const sandboxId: string | undefined = params.sandboxId || body.sandboxId || query.sandboxId;
+    const route: string = req.route?.path || req.url;
+    const method: string = req.method;
+    const requestBody: unknown = req.body;
 
     return next.handle().pipe(
-      tap(async (responseBody) => {
+      tap(async (responseBody: unknown) => {
         try {
           await this.logRepo.save(
             this.logRepo.create({
-              // Only include sandbox if sandboxId is defined
               ...(sandboxId ? { sandbox: { id: sandboxId } } : {}),
-              user: user ? { id: user.userId } : undefined,
+              user: user && user.userId ? { id: user.userId } : undefined,
               route,
               method,
               responseCode: req.res?.statusCode,

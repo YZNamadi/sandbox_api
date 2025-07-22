@@ -32,15 +32,15 @@ export class MocksController {
     @Param('sandboxId', ParseUUIDPipe) sandboxId: string,
     @Body('spec') spec: object,
     @Req() req: Request
-  ) {
+  ): Promise<{ message: string; openapi: object }> {
     // Validate OpenAPI spec
     const openapi = await this.mocksService.validateOpenApiSpec(spec);
     // Save to sandbox
-    const teamId = (req.user as any)?.teamId;
+    const teamId = (req.user as { teamId?: string })?.teamId;
     if (!teamId) throw new Error('Missing teamId in JWT payload');
     const sandbox = await this.sandboxesService.updateOpenApiSpec(teamId, sandboxId, openapi);
     // Reload dynamic routes (unregister + register)
-    await this.dynamicMockRouter.reloadMockRoutes(sandbox as Sandbox, openapi);
+    await this.dynamicMockRouter.reloadMockRoutes(sandbox, openapi);
     return { message: 'OpenAPI spec validated, saved, and routes reloaded', openapi };
   }
 
@@ -53,13 +53,13 @@ export class MocksController {
   @ApiResponse({ status: 400, description: 'Missing required fields.' })
   async saveCustomMock(
     @Param('sandboxId', ParseUUIDPipe) sandboxId: string,
-    @Body() body: { path: string; method: string; response: any; isRandomized?: boolean; delayMs?: number },
+    @Body() body: { path: string; method: string; response: unknown; isRandomized?: boolean; delayMs?: number },
     @Req() req: Request
-  ) {
+  ): Promise<unknown> {
     if (!body.path || !body.method || !body.response) {
       throw new BadRequestException('Missing required fields');
     }
-    const teamId = (req.user as any)?.teamId;
+    const teamId = (req.user as { teamId?: string })?.teamId;
     if (!teamId) throw new Error('Missing teamId in JWT payload');
     // Optionally, you could check teamId ownership here
     return this.mocksService.saveCustomMock(

@@ -2,6 +2,15 @@ import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from './roles.decorator';
 import { RoleEnum } from './roles.enum';
+import { Request } from 'express';
+
+// Add JwtUser interface for type safety
+interface JwtUser {
+  userId: string;
+  email: string;
+  teamId: string;
+  role: string;
+}
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -15,7 +24,8 @@ export class RolesGuard implements CanActivate {
     if (!requiredRoles) {
       return true;
     }
-    const { user } = context.switchToHttp().getRequest();
-    return requiredRoles.includes(user?.role);
+    const req = context.switchToHttp().getRequest<Request>();
+    const user = req.user as JwtUser;
+    return requiredRoles.includes(user?.role as RoleEnum);
   }
 } 

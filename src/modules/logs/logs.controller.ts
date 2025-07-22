@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, Req, UnauthorizedException, Logger } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, Req } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Log } from './log.entity';
@@ -27,8 +27,6 @@ class LogQueryDto {
   @IsOptional() @IsNumberString() limit?: number;
 }
 
-const logger = new Logger('LogsController');
-
 @ApiTags('Logs')
 @ApiBearerAuth()
 @Controller('logs')
@@ -49,7 +47,7 @@ export class LogsController {
   @ApiQuery({ name: 'limit', required: false, type: 'number' })
   @ApiResponse({ status: 200, description: 'List of audit logs.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async getLogs(@Req() req: Request, @Query() query: LogQueryDto) {
+  async getLogs(@Req() req: Request, @Query() query: LogQueryDto): Promise<Log[]> {
     // JwtAuthGuard and RolesGuard ensure req.user is always defined here
     const user = req.user as JwtUser;
     const qb = this.logRepo.createQueryBuilder('log')
