@@ -48,7 +48,7 @@ export class MocksController {
   @ApiResponse({ status: 400, description: 'Invalid OpenAPI spec.' })
   async uploadOpenApi(
     @Param('sandboxId', ParseUUIDPipe) sandboxId: string,
-    @Body('spec') spec: object,
+    @Body('spec') spec: Record<string, unknown>,
     @Req() req: Request,
   ): Promise<{ message: string; openapi: object }> {
     // Validate OpenAPI spec
