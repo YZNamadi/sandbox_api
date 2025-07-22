@@ -52,4 +52,4 @@ export class LogInterceptor implements NestInterceptor {
       catchError((err: unknown) => throwError(() => err)),
     );
   }
-}
+} 
