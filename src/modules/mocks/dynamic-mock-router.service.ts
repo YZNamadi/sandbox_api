@@ -79,9 +79,9 @@ export class DynamicMockRouterService implements OnModuleInit {
               JSON.stringify({
                 endpoint: endpointKey,
                 request: {
-                  body: req.body,
-                  query: req.query,
-                  params: req.params,
+                  body: req.body as Record<string, unknown>,
+                  query: req.query as Record<string, unknown>,
+                  params: req.params as Record<string, unknown>,
                 },
                 response: simResult,
                 timestamp: Date.now(),
@@ -105,18 +105,18 @@ export class DynamicMockRouterService implements OnModuleInit {
               const idx = Math.floor(Math.random() * arr.length);
               responseToSend = arr[idx];
             } else {
-              responseToSend = customMock.response;
+              responseToSend = customMock.response as unknown;
             }
             await this.redis.lpush(
               `sandbox:${sandbox.id}:requests`,
               JSON.stringify({
                 endpoint: endpointKey,
                 request: {
-                  body: req.body,
-                  query: req.query,
-                  params: req.params,
+                  body: req.body as Record<string, unknown>,
+                  query: req.query as Record<string, unknown>,
+                  params: req.params as Record<string, unknown>,
                 },
-                response: responseToSend,
+                response: responseToSend as Record<string, unknown>,
                 timestamp: Date.now(),
               }),
             );
@@ -144,14 +144,26 @@ export class DynamicMockRouterService implements OnModuleInit {
             `sandbox:${sandbox.id}:requests`,
             JSON.stringify({
               endpoint: endpointKey,
-              request: { body: req.body, query: req.query, params: req.params },
-              response: mockResponse,
+              request: {
+                body: req.body as Record<string, unknown>,
+                query: req.query as Record<string, unknown>,
+                params: req.params as Record<string, unknown>,
+              },
+              response: mockResponse as Record<string, unknown>,
               timestamp: Date.now(),
             }),
           );
           res.json(mockResponse);
         };
-        (expressApp as any)[lowerMethod](routePath, handler);
+        // Type the Express app with index signature for HTTP methods
+        (
+          expressApp as {
+            [key: string]: (
+              path: string,
+              handler: (req: Request, res: Response) => Promise<void>,
+            ) => void;
+          }
+        )[lowerMethod](routePath, handler);
         routes.push({ method: lowerMethod, path: routePath, handler });
         this.logger.log(`Registered mock route: [${method}] ${routePath}`);
       }

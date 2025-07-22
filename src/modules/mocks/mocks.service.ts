@@ -21,9 +21,11 @@ export class MocksService {
     await this.redis.set(`sandbox:${sandboxId}:openapi`, JSON.stringify(spec));
   }
 
-  async getCachedOpenApiSpec(sandboxId: string): Promise<object | null> {
+  async getCachedOpenApiSpec(
+    sandboxId: string,
+  ): Promise<Record<string, unknown> | null> {
     const specStr = await this.redis.get(`sandbox:${sandboxId}:openapi`);
-    return specStr ? JSON.parse(specStr) : null;
+    return specStr ? (JSON.parse(specStr) as Record<string, unknown>) : null;
   }
 
   // Cache mock response in Redis
@@ -43,7 +45,7 @@ export class MocksService {
     sandboxId: string,
     path: string,
     method: string,
-  ): Promise<unknown | null> {
+  ): Promise<unknown> {
     const respStr = await this.redis.get(
       `sandbox:${sandboxId}:mock:${method}:${path}`,
     );
@@ -55,7 +57,7 @@ export class MocksService {
   ): Promise<OpenAPIObject> {
     try {
       // Optionally cache the spec after validation
-      return (await SwaggerParser.validate(spec as any)) as OpenAPIObject;
+      return (await SwaggerParser.validate(spec)) as OpenAPIObject;
     } catch (e) {
       if (e instanceof Error) {
         throw new BadRequestException('Invalid OpenAPI spec: ' + e.message);

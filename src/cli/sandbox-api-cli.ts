@@ -86,9 +86,13 @@ async function main() {
       error &&
       typeof error === 'object' &&
       'isAxiosError' in error &&
-      error.isAxiosError
+      (error as { isAxiosError?: boolean }).isAxiosError
     ) {
-      console.error('Error:', error.response?.data ?? error.message);
+      const axiosError = error as {
+        response?: { data?: unknown };
+        message?: string;
+      };
+      console.error('Error:', axiosError.response?.data ?? axiosError.message);
     } else if (error instanceof Error) {
       console.error('Error:', error.message);
     } else {

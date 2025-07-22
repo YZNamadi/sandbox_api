@@ -7,12 +7,7 @@ import { PluginRegistry } from './plugins/plugin.registry';
 import { Inject } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { Request } from 'express';
-
-type SimulationConfig = {
-  plugin?: string;
-  scenario?: any;
-  [key: string]: any;
-};
+import { SimulationConfig, SimulationState } from './simulation.plugin';
 
 @Injectable()
 export class SimulationsService {
@@ -62,17 +57,17 @@ export class SimulationsService {
   async getSimulationState(
     sandboxId: string,
     endpoint: string,
-  ): Promise<Record<string, unknown>> {
+  ): Promise<SimulationState> {
     const key = `sandbox:${sandboxId}:simstate:${endpoint}`;
     const stateStr = await this.redis.get(key);
-    return stateStr ? (JSON.parse(stateStr) as Record<string, unknown>) : {};
+    return stateStr ? (JSON.parse(stateStr) as SimulationState) : {};
   }
 
   // Set simulation state in Redis
   async setSimulationState(
     sandboxId: string,
     endpoint: string,
-    state: Record<string, unknown>,
+    state: SimulationState,
   ): Promise<void> {
     const key = `sandbox:${sandboxId}:simstate:${endpoint}`;
     await this.redis.set(key, JSON.stringify(state));
@@ -82,12 +77,13 @@ export class SimulationsService {
     sandboxId: string,
     endpoint: string,
     req: Request,
-  ): Promise<any> {
+  ): Promise<Record<string, unknown> | undefined> {
     // Use Redis for simulation state
     const state = await this.getSimulationState(sandboxId, endpoint);
     const sim = await this.getSimulation(sandboxId, endpoint);
     if (!sim) return undefined;
-    let result;
+
+    let result: Record<string, unknown> | undefined;
     const config = sim.config as SimulationConfig;
     // If plugin, execute it
     if (config?.plugin && PluginRegistry[config.plugin]) {
