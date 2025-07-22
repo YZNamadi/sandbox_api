@@ -25,6 +25,7 @@ Environment variables:
 `);
 }
 
+
 async function main() {
   const [,, cmd, ...args] = process.argv;
   if (!cmd || cmd === 'help') return printHelp();
