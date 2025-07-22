@@ -1,0 +1,50 @@
+{
+  "info": {
+    "name": "Sandbox API Virtualization SaaS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth Signup",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": {"raw": "http://localhost:3000/auth/signup", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["auth", "signup"]},
+        "body": {"mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password\",\n  \"name\": \"Test User\",\n  \"teamName\": \"Test Team\"\n}"}
+      }
+    },
+    {
+      "name": "Auth Login",
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "url": {"raw": "http://localhost:3000/auth/login", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["auth", "login"]},
+        "body": {"mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"password\"\n}"}
+      }
+    },
+    {
+      "name": "Create Sandbox",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{access_token}}"}
+        ],
+        "url": {"raw": "http://localhost:3000/sandbox", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["sandbox"]},
+        "body": {"mode": "raw", "raw": "{\n  \"name\": \"Demo Sandbox\",\n  \"openapiSpec\": {}\n}"}
+      }
+    },
+    {
+      "name": "Upload OpenAPI Spec",
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"},
+          {"key": "Authorization", "value": "Bearer {{access_token}}"}
+        ],
+        "url": {"raw": "http://localhost:3000/sandbox/{{sandboxId}}/mocks/openapi", "protocol": "http", "host": ["localhost"], "port": "3000", "path": ["sandbox", "{{sandboxId}}", "mocks", "openapi"]},
+        "body": {"mode": "raw", "raw": "{\n  \"spec\": {\n    \"openapi\": \"3.0.0\",\n    \"info\": {\n      \"title\": \"Demo API\",\n      \"version\": \"1.0.0\"\n    },\n    \"paths\": {}\n  }\n}"}
+      }
+    }
+  ]
+} 

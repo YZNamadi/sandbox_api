@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: sandbox
+          POSTGRES_PASSWORD: sandboxpass
+          POSTGRES_DB: sandbox
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: sandbox
+      POSTGRES_PASSWORD: sandboxpass
+      POSTGRES_DB: sandbox
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      JWT_SECRET: testsecret
+      JWT_EXPIRES_IN: 1h
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+        working-directory: ./sandbox-api
+      - run: npm run build --if-present
+        working-directory: ./sandbox-api
+      - run: npm run lint --if-present
+        working-directory: ./sandbox-api
+      - run: npm test
+        working-directory: ./sandbox-api 
