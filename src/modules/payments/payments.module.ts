@@ -11,4 +11,4 @@ import { PaymentsService } from './payments.service';
   providers: [PaymentsService],
   exports: [TypeOrmModule],
 })
-export class PaymentsModule {} 
+export class PaymentsModule {}

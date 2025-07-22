@@ -12,7 +12,10 @@ export class PaymentsService {
   ) {}
 
   // Placeholder: create Stripe customer and subscription
-  async createSubscription(teamId: string, plan: PlanTier): Promise<{ message: string; teamId: string; plan: PlanTier }> {
+  createSubscription(
+    teamId: string,
+    plan: PlanTier,
+  ): { message: string; teamId: string; plan: PlanTier } {
     // TODO: Integrate with Stripe API
     // 1. Create Stripe customer if not exists
     // 2. Create Stripe subscription for the plan
@@ -21,14 +24,17 @@ export class PaymentsService {
   }
 
   // Placeholder: handle Stripe webhook events
-  async handleStripeWebhook(event: unknown): Promise<{ received: boolean }> {
+  handleStripeWebhook(event: unknown): { received: boolean } {
     // TODO: Process Stripe webhook events (subscription updates, cancellations, etc.)
+    console.log(event);
     return { received: true };
   }
 
   // Track API usage for billing
   async incrementUsage(teamId: string): Promise<void> {
-    const payment = await this.paymentRepo.findOne({ where: { team: { id: teamId } } });
+    const payment = await this.paymentRepo.findOne({
+      where: { team: { id: teamId } },
+    });
     if (payment) {
       payment.requestsUsed += 1;
       await this.paymentRepo.save(payment);
@@ -39,4 +45,4 @@ export class PaymentsService {
   async getSubscription(teamId: string): Promise<Payment | null> {
     return this.paymentRepo.findOne({ where: { team: { id: teamId } } });
   }
-} 
+}

@@ -11,4 +11,4 @@ import { CIIntegrationsService } from './ci-integrations.service';
   providers: [CIIntegrationsService],
   exports: [TypeOrmModule],
 })
-export class CIIntegrationsModule {} 
+export class CIIntegrationsModule {}

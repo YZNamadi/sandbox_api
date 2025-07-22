@@ -11,4 +11,4 @@ export class Team {
 
   @OneToMany(() => User, (user) => user.team)
   users: User[];
-} 
+}

@@ -4,4 +4,4 @@ import { SandboxState } from '../sandbox.entity';
 export class UpdateSandboxStateDto {
   @IsEnum(SandboxState)
   state: SandboxState;
-} 
+}

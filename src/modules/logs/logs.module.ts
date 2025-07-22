@@ -10,9 +10,7 @@ import { LogsController } from './logs.controller';
 @Module({
   imports: [TypeOrmModule.forFeature([Log, Sandbox, User])],
   controllers: [LogsController],
-  providers: [
-    { provide: APP_INTERCEPTOR, useClass: LogInterceptor },
-  ],
+  providers: [{ provide: APP_INTERCEPTOR, useClass: LogInterceptor }],
   exports: [TypeOrmModule],
 })
 export class LogsModule {}

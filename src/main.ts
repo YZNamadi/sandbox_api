@@ -5,7 +5,6 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { DynamicMockRouterService } from './modules/mocks/dynamic-mock-router.service';
 
 // Move OptionalJwtAuthGuard to its own file for reuse
 
@@ -14,14 +13,14 @@ async function bootstrap() {
   const reflector = app.get(Reflector);
   // Only apply RolesGuard globally
   app.useGlobalGuards(new RolesGuard(reflector));
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
   app.use(helmet());
-
-  // Set app instance for DynamicMockRouterService
-  const dynamicMockRouter = app.get(DynamicMockRouterService);
-  if (dynamicMockRouter && typeof dynamicMockRouter.setApp === 'function') {
-    dynamicMockRouter.setApp(app);
-  }
 
   // Swagger setup
   const config = new DocumentBuilder()
@@ -34,10 +33,10 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   // Healthcheck endpoint
-  app.getHttpAdapter().getInstance().get('/health', (req: Request, res: Response) => {
+  app.getHttpAdapter().get('/health', (req: Request, res: Response) => {
     res.status(200).json({ status: 'ok' });
   });
 
   await app.listen(process.env.PORT || 3000);
 }
-bootstrap();
+void bootstrap();

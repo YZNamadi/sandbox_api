@@ -20,4 +20,4 @@ export class RoleSeeder implements OnModuleInit {
       }
     }
   }
-} 
+}

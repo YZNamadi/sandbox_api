@@ -13,4 +13,4 @@ import { UsersService } from './users.service';
   providers: [RoleSeeder, UsersService],
   exports: [TypeOrmModule, RoleSeeder],
 })
-export class UsersModule {} 
+export class UsersModule {}

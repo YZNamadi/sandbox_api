@@ -22,18 +22,19 @@ export class LogInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest<Request>();
     const user = req.user as { userId?: string } | undefined;
-    const params = req.params || {};
-    const body = req.body || {};
-    const query = req.query || {};
-    const sandboxId: string | undefined = params.sandboxId || body.sandboxId || query.sandboxId;
-    const route: string = req.route?.path || req.url;
+    const params = (req.params as { sandboxId?: string }) || {};
+    const body = (req.body as { sandboxId?: string }) || {};
+    const query = (req.query as { sandboxId?: string }) || {};
+    const sandboxId: string | undefined =
+      params.sandboxId || body.sandboxId || query.sandboxId;
+    const route: string = (req.route as { path: string })?.path || req.url;
     const method: string = req.method;
     const requestBody: unknown = req.body;
 
     return next.handle().pipe(
-      tap(async (responseBody: unknown) => {
+      tap((responseBody: unknown) => {
         try {
-          await this.logRepo.save(
+          void this.logRepo.save(
             this.logRepo.create({
               ...(sandboxId ? { sandbox: { id: sandboxId } } : {}),
               user: user && user.userId ? { id: user.userId } : undefined,
@@ -42,13 +43,13 @@ export class LogInterceptor implements NestInterceptor {
               responseCode: req.res?.statusCode,
               requestBody,
               responseBody,
-            })
+            }),
           );
-        } catch (e) {
+        } catch {
           // fail silently for logging
         }
       }),
-      catchError(err => throwError(() => err))
+      catchError((err: unknown) => throwError(() => err)),
     );
   }
-} 
+}

@@ -8,4 +8,4 @@ export const PluginRegistry: Record<string, SimulationPlugin> = {
   fraud: FraudPlugin,
   balance: BalancePlugin,
   // Add more plugins here
-}; 
+};

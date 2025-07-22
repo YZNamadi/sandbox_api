@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Sandbox } from '../sandboxes/sandbox.entity';
 
 @Entity()
@@ -23,4 +30,4 @@ export class Simulation {
 
   @UpdateDateColumn()
   updatedAt: Date;
-} 
+}

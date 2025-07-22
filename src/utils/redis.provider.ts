@@ -9,4 +9,4 @@ export const RedisProvider: Provider = {
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
     });
   },
-}; 
+};

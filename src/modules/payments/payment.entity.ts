@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Team } from '../users/team.entity';
 
 export enum PlanTier {
@@ -35,4 +42,4 @@ export class Payment {
 
   @UpdateDateColumn()
   updatedAt: Date;
-} 
+}

@@ -17,7 +17,10 @@ const openApiSpec = {
             description: 'OK',
             content: {
               'application/json': {
-                schema: { type: 'object', properties: { message: { type: 'string' } } },
+                schema: {
+                  type: 'object',
+                  properties: { message: { type: 'string' } },
+                },
               },
             },
           },
@@ -26,6 +29,19 @@ const openApiSpec = {
     },
   },
 };
+
+interface AuthResponse {
+  access_token?: string;
+  token?: string;
+}
+
+interface SandboxResponse {
+  id: string;
+}
+
+interface InviteResponse {
+  id: string;
+}
 
 describe('E2E: All endpoints', () => {
   let app: INestApplication;
@@ -38,10 +54,21 @@ describe('E2E: All endpoints', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
     await app.init();
     // Optionally log DB info
-    console.log('DB Host:', process.env.POSTGRES_HOST, 'DB Name:', process.env.POSTGRES_DB);
+    console.log(
+      'DB Host:',
+      process.env.POSTGRES_HOST,
+      'DB Name:',
+      process.env.POSTGRES_DB,
+    );
   }, 60000);
 
   afterAll(async () => {
@@ -51,7 +78,7 @@ describe('E2E: All endpoints', () => {
   it('GET /health', async () => {
     const res = await request(app.getHttpServer()).get('/health');
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe('ok');
+    expect((res.body as { status: string }).status).toBe('ok');
   });
 
   it('GET /', async () => {
@@ -61,16 +88,15 @@ describe('E2E: All endpoints', () => {
   });
 
   it('POST /auth/signup', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/auth/signup')
-      .send({
-        email: uniqueEmail,
-        password: 'Test1234!',
-        name: 'Test User',
-        teamName: 'Test Team',
-      });
+    const res = await request(app.getHttpServer()).post('/auth/signup').send({
+      email: uniqueEmail,
+      password: 'Test1234!',
+      name: 'Test User',
+      teamName: 'Test Team',
+    });
     expect(res.status).toBe(201);
-    expect(res.body).toHaveProperty('access_token');
+    const body = res.body as AuthResponse;
+    expect(body.access_token).toBeDefined();
   });
 
   it('POST /auth/login', async () => {
@@ -79,9 +105,11 @@ describe('E2E: All endpoints', () => {
       .send({ email: uniqueEmail, password: 'Test1234!' });
     expect(res.status).toBe(201);
     // Accept either access_token or token
-    const token = res.body.access_token || res.body.token;
+    const token =
+      (res.body as AuthResponse).access_token ||
+      (res.body as AuthResponse).token;
     expect(token).toBeDefined();
-    jwt = token;
+    jwt = token!;
   });
 
   it('POST /sandbox (create sandbox)', async () => {
@@ -91,8 +119,9 @@ describe('E2E: All endpoints', () => {
       .send({ name: 'My Sandbox', openapiSpec: openApiSpec });
     console.log('POST /sandbox', res.body);
     expect(res.status).toBe(201);
-    expect(res.body).toHaveProperty('id');
-    sandboxId = res.body.id;
+    const body = res.body as SandboxResponse;
+    expect(body.id).toBeDefined();
+    sandboxId = body.id;
   });
 
   it('GET /sandbox/:id', async () => {
@@ -151,9 +180,6 @@ describe('E2E: All endpoints', () => {
   let ownerJwt: string;
   let adminJwt: string;
   let devJwt: string;
-  let viewerJwt: string;
-  let teamId: string;
-  let userId: string;
   let ciToken: string;
 
   describe('E2E: Logs, Billing, CI/CD, Admin, and Edge Cases', () => {
@@ -169,37 +195,55 @@ describe('E2E: All endpoints', () => {
       const devEmail = `dev+${Date.now()}@example.com`;
       const viewerEmail = `viewer+${Date.now()}@example.com`;
       // Owner signup
-      await request(app.getHttpServer())
-        .post('/auth/signup')
-        .send({ email: ownerEmail, password: 'Test1234!', name: 'Owner', teamName: 'Team1', roleName: 'Owner' });
+      await request(app.getHttpServer()).post('/auth/signup').send({
+        email: ownerEmail,
+        password: 'Test1234!',
+        name: 'Owner',
+        teamName: 'Team1',
+        roleName: 'Owner',
+      });
       const ownerLogin = await request(app.getHttpServer())
         .post('/auth/login')
         .send({ email: ownerEmail, password: 'Test1234!' });
-      ownerJwt = ownerLogin.body.access_token || ownerLogin.body.token;
+      ownerJwt = ((ownerLogin.body as AuthResponse).access_token ||
+        (ownerLogin.body as AuthResponse).token)!;
       // Admin signup
-      await request(app.getHttpServer())
-        .post('/auth/signup')
-        .send({ email: adminEmail, password: 'Test1234!', name: 'Admin', teamName: 'Team1', roleName: 'Admin' });
+      await request(app.getHttpServer()).post('/auth/signup').send({
+        email: adminEmail,
+        password: 'Test1234!',
+        name: 'Admin',
+        teamName: 'Team1',
+        roleName: 'Admin',
+      });
       const adminLogin = await request(app.getHttpServer())
         .post('/auth/login')
         .send({ email: adminEmail, password: 'Test1234!' });
-      adminJwt = adminLogin.body.access_token || adminLogin.body.token;
+      adminJwt = ((adminLogin.body as AuthResponse).access_token ||
+        (adminLogin.body as AuthResponse).token)!;
       // Developer signup
-      await request(app.getHttpServer())
-        .post('/auth/signup')
-        .send({ email: devEmail, password: 'Test1234!', name: 'Dev', teamName: 'Team1', roleName: 'Developer' });
+      await request(app.getHttpServer()).post('/auth/signup').send({
+        email: devEmail,
+        password: 'Test1234!',
+        name: 'Dev',
+        teamName: 'Team1',
+        roleName: 'Developer',
+      });
       const devLogin = await request(app.getHttpServer())
         .post('/auth/login')
         .send({ email: devEmail, password: 'Test1234!' });
-      devJwt = devLogin.body.access_token || devLogin.body.token;
+      devJwt = ((devLogin.body as AuthResponse).access_token ||
+        (devLogin.body as AuthResponse).token)!;
       // Viewer signup
+      await request(app.getHttpServer()).post('/auth/signup').send({
+        email: viewerEmail,
+        password: 'Test1234!',
+        name: 'Viewer',
+        teamName: 'Team1',
+        roleName: 'Viewer',
+      });
       await request(app.getHttpServer())
-        .post('/auth/signup')
-        .send({ email: viewerEmail, password: 'Test1234!', name: 'Viewer', teamName: 'Team1', roleName: 'Viewer' });
-      const viewerLogin = await request(app.getHttpServer())
         .post('/auth/login')
         .send({ email: viewerEmail, password: 'Test1234!' });
-      viewerJwt = viewerLogin.body.access_token || viewerLogin.body.token;
       // Optionally, get teamId from owner login if needed
       // teamId = ...
       // Create a sandbox as owner
@@ -207,7 +251,7 @@ describe('E2E: All endpoints', () => {
         .post('/sandbox')
         .set('Authorization', `Bearer ${ownerJwt}`)
         .send({ name: 'Log Test Sandbox', openapiSpec: openApiSpec });
-      const sandboxId = sandboxRes.body.id;
+      const sandboxId = (sandboxRes.body as SandboxResponse).id;
       // Make a GET /sandbox/:id request as owner to generate a log
       await request(app.getHttpServer())
         .get(`/sandbox/${sandboxId}`)
@@ -256,7 +300,7 @@ describe('E2E: All endpoints', () => {
         .set('Authorization', `Bearer ${adminJwt}`)
         .send({ description: 'CI token' });
       expect(createRes.status).toBe(201);
-      ciToken = createRes.body.token;
+      ciToken = (createRes.body as AuthResponse).token!;
       const revokeRes = await request(app.getHttpServer())
         .delete('/ci-tokens')
         .set('Authorization', `Bearer ${adminJwt}`)
@@ -281,9 +325,13 @@ describe('E2E: All endpoints', () => {
       const inviteRes = await request(app.getHttpServer())
         .post('/admin/users/invite')
         .set('Authorization', `Bearer ${ownerJwt}`)
-        .send({ email: 'newuser@example.com', name: 'New User', roleName: 'Developer' });
+        .send({
+          email: 'newuser@example.com',
+          name: 'New User',
+          roleName: 'Developer',
+        });
       expect(inviteRes.status).toBe(201);
-      userId = inviteRes.body.id;
+      const userId = (inviteRes.body as InviteResponse).id;
       const changeRoleRes = await request(app.getHttpServer())
         .patch(`/admin/users/${userId}/role`)
         .set('Authorization', `Bearer ${ownerJwt}`)
@@ -296,8 +344,7 @@ describe('E2E: All endpoints', () => {
     });
 
     it('Negative: Unauthorized access returns 401', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/logs');
+      const res = await request(app.getHttpServer()).get('/logs');
       expect(res.status).toBe(401);
     });
 

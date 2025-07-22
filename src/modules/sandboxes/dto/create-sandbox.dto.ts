@@ -7,4 +7,4 @@ export class CreateSandboxDto {
 
   @IsObject()
   openapiSpec: object;
-} 
+}

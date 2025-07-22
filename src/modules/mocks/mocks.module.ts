@@ -20,4 +20,4 @@ import { RedisModule } from '../../utils/redis.module';
   providers: [MocksService, DynamicMockRouterService],
   exports: [TypeOrmModule, MocksService, DynamicMockRouterService],
 })
-export class MocksModule {} 
+export class MocksModule {}

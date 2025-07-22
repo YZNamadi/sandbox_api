@@ -11,4 +11,4 @@ import { RedisModule } from '../../utils/redis.module';
   providers: [SimulationsService],
   exports: [TypeOrmModule, SimulationsService],
 })
-export class SimulationsModule {} 
+export class SimulationsModule {}

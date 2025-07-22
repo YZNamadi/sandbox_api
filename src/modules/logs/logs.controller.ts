@@ -4,11 +4,16 @@ import { Repository } from 'typeorm';
 import { Log } from './log.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
 import { RoleEnum } from '../auth/roles.enum';
 import { Request } from 'express';
 import { IsOptional, IsString, IsNumberString } from 'class-validator';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+} from '@nestjs/swagger';
 
 interface JwtUser {
   userId: string;
@@ -47,18 +52,27 @@ export class LogsController {
   @ApiQuery({ name: 'limit', required: false, type: 'number' })
   @ApiResponse({ status: 200, description: 'List of audit logs.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async getLogs(@Req() req: Request, @Query() query: LogQueryDto): Promise<Log[]> {
+  async getLogs(
+    @Req() req: Request,
+    @Query() query: LogQueryDto,
+  ): Promise<Log[]> {
     // JwtAuthGuard and RolesGuard ensure req.user is always defined here
     const user = req.user as JwtUser;
-    const qb = this.logRepo.createQueryBuilder('log')
+    const qb = this.logRepo
+      .createQueryBuilder('log')
       .leftJoinAndSelect('log.sandbox', 'sandbox')
       .leftJoinAndSelect('log.user', 'user');
-    if (query.sandboxId) qb.andWhere('sandbox.id = :sandboxId', { sandboxId: query.sandboxId });
-    if (query.userId) qb.andWhere('user.id = :userId', { userId: query.userId });
+    if (query.sandboxId)
+      qb.andWhere('sandbox.id = :sandboxId', { sandboxId: query.sandboxId });
+    if (query.userId)
+      qb.andWhere('user.id = :userId', { userId: query.userId });
     if (query.route) qb.andWhere('log.route = :route', { route: query.route });
-    if (query.method) qb.andWhere('log.method = :method', { method: query.method });
-    if (query.fromDate) qb.andWhere('log.timestamp >= :fromDate', { fromDate: query.fromDate });
-    if (query.toDate) qb.andWhere('log.timestamp <= :toDate', { toDate: query.toDate });
+    if (query.method)
+      qb.andWhere('log.method = :method', { method: query.method });
+    if (query.fromDate)
+      qb.andWhere('log.timestamp >= :fromDate', { fromDate: query.fromDate });
+    if (query.toDate)
+      qb.andWhere('log.timestamp <= :toDate', { toDate: query.toDate });
     if (query.limit) qb.limit(query.limit);
     if (![RoleEnum.OWNER, RoleEnum.ADMIN].includes(user.role as RoleEnum)) {
       if (user.teamId) {
@@ -71,4 +85,4 @@ export class LogsController {
     const logs = await qb.getMany();
     return logs;
   }
-} 
+}

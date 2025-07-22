@@ -1,22 +1,30 @@
 import { SimulationPlugin } from '../simulation.plugin';
 
+interface BalanceState {
+  balance: number;
+}
+
 export const BalancePlugin: SimulationPlugin = {
   name: 'balance',
-  async execute(config, req, state) {
+  execute(config, req, state) {
     // Example: Simulate balance updates per user
-    const userId = req.body?.userId || 'unknown';
+    const userId = (req.body as { userId?: string })?.userId || 'unknown';
+    const body = req.body as { amount?: number; type?: 'debit' | 'credit' };
     if (!state[userId]) {
-      state[userId] = { balance: config.initial || 1000 };
+      state[userId] = {
+        balance: (config as { initial?: number }).initial || 1000,
+      };
     }
-    if (req.body?.amount && req.body?.type === 'debit') {
-      state[userId].balance -= req.body.amount;
+    const userState = state[userId] as BalanceState;
+    if (body?.amount && body?.type === 'debit') {
+      userState.balance -= body.amount;
     }
-    if (req.body?.amount && req.body?.type === 'credit') {
-      state[userId].balance += req.body.amount;
+    if (body?.amount && body?.type === 'credit') {
+      userState.balance += body.amount;
     }
-    return {
+    return Promise.resolve({
       userId,
-      balance: state[userId].balance,
-    };
+      balance: userState.balance,
+    });
   },
-}; 
+};

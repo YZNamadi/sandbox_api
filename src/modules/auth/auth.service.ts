@@ -16,7 +16,13 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async signup(email: string, password: string, name: string, teamName: string, roleName: string = 'Owner') {
+  async signup(
+    email: string,
+    password: string,
+    name: string,
+    teamName: string,
+    roleName: string = 'Owner',
+  ) {
     const existing = await this.userRepo.findOne({ where: { email } });
     if (existing) throw new UnauthorizedException('Email already in use');
     let team = await this.teamRepo.findOne({ where: { name: teamName } });
@@ -30,20 +36,40 @@ export class AuthService {
       await this.roleRepo.save(role);
     }
     const hashed = await bcrypt.hash(password, 10);
-    const user = this.userRepo.create({ email, password: hashed, name, team, role });
+    const user = this.userRepo.create({
+      email,
+      password: hashed,
+      name,
+      team,
+      role,
+    });
     await this.userRepo.save(user);
     return this.login(email, password);
   }
 
   async login(email: string, password: string) {
-    const user = await this.userRepo.findOne({ where: { email }, relations: ['team', 'role'] });
+    const user = await this.userRepo.findOne({
+      where: { email },
+      relations: ['team', 'role'],
+    });
     if (!user) throw new UnauthorizedException('Invalid credentials');
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
-    const payload = { sub: user.id, email: user.email, teamId: user.team.id, role: user.role.name };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      teamId: user.team.id,
+      role: user.role.name,
+    };
     return {
       access_token: this.jwtService.sign(payload),
-      user: { id: user.id, email: user.email, name: user.name, team: user.team.name, role: user.role.name },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        team: user.team.name,
+        role: user.role.name,
+      },
     };
   }
-} 
+}

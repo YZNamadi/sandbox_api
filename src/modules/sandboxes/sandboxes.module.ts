@@ -4,7 +4,6 @@ import { Sandbox } from './sandbox.entity';
 import { Team } from '../users/team.entity';
 import { SandboxesService } from './sandboxes.service';
 import { SandboxesController } from './sandboxes.controller';
-import { DynamicMockRouterService } from '../mocks/dynamic-mock-router.service';
 import { MocksModule } from '../mocks/mocks.module';
 import { SimulationsModule } from '../simulations/simulations.module';
 import { RedisModule } from '../../utils/redis.module';
@@ -20,4 +19,4 @@ import { RedisModule } from '../../utils/redis.module';
   providers: [SandboxesService],
   exports: [TypeOrmModule, SandboxesService],
 })
-export class SandboxesModule {} 
+export class SandboxesModule {}
