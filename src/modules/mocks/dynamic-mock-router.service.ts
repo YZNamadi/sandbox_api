@@ -135,8 +135,9 @@ export class DynamicMockRouterService implements OnModuleInit {
     // Simple mock generator for OpenAPI schema (expand as needed)
     if (schema.type === 'object' && schema.properties) {
       const obj: Record<string, unknown> = {};
-      for (const key in schema.properties as Record<string, unknown>) {
-        obj[key] = this.generateMockFromSchema((schema.properties as Record<string, unknown>)[key]);
+      const properties = schema.properties as Record<string, unknown>;
+      for (const key of Object.keys(properties)) {
+        obj[key] = this.generateMockFromSchema(properties[key] as Record<string, unknown>);
       }
       return obj;
     }
